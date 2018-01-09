@@ -131,11 +131,11 @@ int main(int argc, char *argv[])
 			printf("forked process %d to %d\n", running->pid, p->pid);
 		}
 		else if (input == 'k') {
-			int temp_pid;
+			int deleting_pid;
 			printf("pid: ");
-			scanf("%d", &temp_pid);
+			scanf("%d", &deleting_pid);
 			Process *p = malloc(sizeof(Process));
-			p->pid = temp_pid;
+			p->pid = deleting_pid;
 			
 			if ((ListCurr(HPlist)) == NULL){
 				if ((ListCurr(NPlist)) == NULL){
@@ -147,7 +147,8 @@ int main(int argc, char *argv[])
 			// High
 			Process *curr = ListCurr(HPlist);
 			if (curr != NULL) {
-				if (curr->pid == temp_pid) {
+				// if the process that user wants to kill is the one running
+				if (curr->pid == deleting_pid) {
 					if (ListNext(HPlist) == NULL) {
 						ListPrev(HPlist);
 						ListRemove(HPlist);
@@ -160,7 +161,10 @@ int main(int argc, char *argv[])
 					}
 					printf("Killed succeeded\n");
 				}
+				// if the process that user wants to kill is not the one running
 				else {
+					// current pointer goes to the first process
+					// and ListSearch takes the current pointer to the found item
 					ListFirst(HPlist);
 					if (ListSearch(HPlist, comparator, p) != NULL) {
 						ListRemove(HPlist);
@@ -174,7 +178,7 @@ int main(int argc, char *argv[])
 			// Norm
 			curr = ListCurr(NPlist);
 			if (curr != NULL) {
-				if (curr->pid == temp_pid) {
+				if (curr->pid == deleting_pid) {
 					if (ListNext(NPlist) == NULL) {
 						ListPrev(NPlist);
 						ListRemove(NPlist);
@@ -198,7 +202,7 @@ int main(int argc, char *argv[])
 			// Low
 			curr = ListCurr(LPlist);
 			if (curr != NULL) {
-				if (curr->pid == temp_pid) {
+				if (curr->pid == deleting_pid) {
 					if (ListNext(LPlist) == NULL) {
 						ListPrev(LPlist);
 						ListRemove(LPlist);
