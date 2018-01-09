@@ -173,6 +173,7 @@ int main(int argc, char *argv[])
 					}
 					ListFirst(HPlist);
 				}
+				//if we cannot find the process, kill fails
 			}
 
 			// Norm
@@ -296,23 +297,26 @@ int main(int argc, char *argv[])
 				continue;
 			}
 
-			int temp_pid;
+			int send_to_pid;
 			printf("target pid: ");
-			scanf("%d", &temp_pid);
+			scanf("%d", &send_to_pid);
 
 			printf("message: ");
 			char message[40];
 			scanf("%s", message);
 			printf("%s\n",message);
-			Process *temp = malloc(sizeof(Process));
-			temp->pid = temp_pid;
+			Process *send_to_process = malloc(sizeof(Process));
+			send_to_process->pid = send_to_pid;
 			Process *receiver;
 
 			int found = 0; //finding revceiver from the 3 lists
+			// return the current pointer to curr so that
+			// we could find the original current pointer location
+			// and move it back using ListSearch
 			Process *curr = ListCurr(HPlist);
 			if (curr != NULL) {
 				ListFirst(HPlist);
-				if ((receiver = ListSearch(HPlist, comparator, temp)) != NULL) {
+				if ((receiver = ListSearch(HPlist, comparator, send_to_process)) != NULL) {
 					found = 1;
 				}
 				ListFirst(HPlist);
@@ -323,7 +327,7 @@ int main(int argc, char *argv[])
 				curr = ListCurr(NPlist);
 				if (curr != NULL) {
 					ListFirst(NPlist);
-					if ((receiver = ListSearch(NPlist, comparator, temp)) != NULL) {
+					if ((receiver = ListSearch(NPlist, comparator, send_to_process)) != NULL) {
 						found = 1;
 					}
 					ListFirst(NPlist);
@@ -335,7 +339,7 @@ int main(int argc, char *argv[])
 				curr = ListCurr(LPlist);
 				if (curr != NULL) {
 					ListFirst(LPlist);
-					if ((receiver = ListSearch(LPlist, comparator, temp)) != NULL) {
+					if ((receiver = ListSearch(LPlist, comparator, send_to_process)) != NULL) {
 						found = 1;
 					}
 					ListFirst(LPlist);
@@ -347,7 +351,7 @@ int main(int argc, char *argv[])
 				curr = ListCurr(sendBlocked);
 				if (curr != NULL) {
 					ListFirst(sendBlocked);
-					if ((receiver = ListSearch(sendBlocked, comparator, temp)) != NULL) {
+					if ((receiver = ListSearch(sendBlocked, comparator, send_to_process)) != NULL) {
 						found = 2; // if receiver is blocked due to the send command, do not unblock it.
 					}
 					ListFirst(sendBlocked);
@@ -359,7 +363,7 @@ int main(int argc, char *argv[])
 				curr = ListCurr(receiveBlocked);
 				if (curr != NULL) {
 					ListFirst(receiveBlocked);
-					if ((receiver = ListSearch(receiveBlocked, comparator, temp)) != NULL) {
+					if ((receiver = ListSearch(receiveBlocked, comparator, send_to_process)) != NULL) {
 						found = 3; // if receiver is already blocked due to the receiver command, unblock it while sending your message.
 					}
 					ListFirst(receiveBlocked);
