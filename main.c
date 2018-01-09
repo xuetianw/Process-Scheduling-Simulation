@@ -313,6 +313,8 @@ int main(int argc, char *argv[])
 			// return the current pointer to curr so that
 			// we could find the original current pointer location
 			// and move it back using ListSearch
+
+			// we are searching the process sent to though 3 Lists from HP to LP
 			Process *curr = ListCurr(HPlist);
 			if (curr != NULL) {
 				ListFirst(HPlist);
@@ -323,6 +325,7 @@ int main(int argc, char *argv[])
 				ListSearch(HPlist, comparator, curr);
 			}
 
+			// if process sent to does not exist in the HP List, then we go to the NPlist
 			if (found == 0) {
 				curr = ListCurr(NPlist);
 				if (curr != NULL) {
@@ -335,6 +338,7 @@ int main(int argc, char *argv[])
 				}
 			}
 
+			// if the process sent to does not exist in the NPlist, then we go to the LPlist 
 			if (found == 0) {
 				curr = ListCurr(LPlist);
 				if (curr != NULL) {
@@ -347,6 +351,7 @@ int main(int argc, char *argv[])
 				}
 			}
 
+			// if the process sent to is in none of the list, we try finding it in the sendBlock List
 			if (found == 0) {
 				curr = ListCurr(sendBlocked);
 				if (curr != NULL) {
@@ -374,11 +379,14 @@ int main(int argc, char *argv[])
 			if (found == 0) {
 					printf("pid does not exist in the 3 Prioritylists\n");
 			}
-			else {// found the revceiver
+			// found the revceiver
+			else {
 				Message *msg = malloc(sizeof(Message));
 				msg->sender = running;
 				strcpy(msg->message, message);
-				if (receiver->state == 2 && found == 3) { // receiver is blocked
+				// if receiver is in the blocked list, we put it in the ready
+				if (receiver->state == 2 && found == 3) {
+				// change the state of receiver to ready 
 					receiver->state = 0; // Ready
 					if (ListSearch(receiveBlocked, comparator, receiver) != NULL) {
 						ListRemove(receiveBlocked); // remove receiver from receiveBlocked list
