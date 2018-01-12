@@ -122,7 +122,6 @@ int main(int argc, char *argv[])
 			else if(p->priority == 1) {
 				ListInsert(NPlist, p);
 				ListNext(NPlist);
-
 			}
 			else if(p->priority == 2) {
 				ListInsert(LPlist, p);
@@ -385,25 +384,28 @@ int main(int argc, char *argv[])
 				Message *msg = malloc(sizeof(Message));
 				msg->sender = running;
 				strcpy(msg->message, message);
-				// if receiver is in the blocked list, we put it in the ready
+				// if receiver is blocked and is on the blocked list, we put it in the ready
 				if (receiver->state == 2 && found == 3) {
 				// change the state of receiver to ready 
 					receiver->state = 0; // Ready
 					if (ListSearch(receiveBlocked, comparator, receiver) != NULL) {
 						ListRemove(receiveBlocked); // remove receiver from receiveBlocked list
 						if(receiver->priority == 0) {
+							//put it at the back of the queue
 							ListInsert(HPlist, receiver);
 							if (ListNext(HPlist) == NULL) {
 								ListPrev(HPlist);
 							}
 						}
 						else if(receiver->priority == 1) {
+							//put it at the back of the queue
 							ListInsert(NPlist, receiver);
 							if (ListNext(NPlist) == NULL) {
 								ListPrev(NPlist);
 							}
 						}
 						else {
+							//put it at the back of the queue
 							ListInsert(LPlist, receiver);
 							if (ListNext(LPlist) == NULL) {
 								ListPrev(LPlist);
@@ -421,6 +423,7 @@ int main(int argc, char *argv[])
 					if (ListNext(HPlist) == NULL) {
 						ListPrev(HPlist);
 						ListRemove(HPlist);
+						// go to the next process which is at the first of the queue
 						ListFirst(HPlist);
 					}
 					else {
@@ -432,6 +435,7 @@ int main(int argc, char *argv[])
 					if (ListNext(NPlist) == NULL) {
 						ListPrev(NPlist);
 						ListRemove(NPlist);
+						// go to the next process which is at the first of the queue
 						ListFirst(NPlist);
 					}
 					else {
@@ -443,6 +447,7 @@ int main(int argc, char *argv[])
 					if (ListNext(LPlist) == NULL) {
 						ListPrev(LPlist);
 						ListRemove(LPlist);
+						// go to the next process which is at the first of the queue
 						ListFirst(LPlist);
 					}
 					else {
