@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
 					}
 					ListFirst(HPlist);
 				}
-				//if we cannot find the process, kill fails
+				//if we cannot find the process, kill fails need to complete
 			}
 
 			// Norm
@@ -310,9 +310,9 @@ int main(int argc, char *argv[])
 			Process *receiver;
 
 			int found = 0; //finding revceiver from the 3 lists
-			// return the current pointer to curr so that
+
+			// return the current pointer int a temp lovation curr so that
 			// we could find the original current pointer location
-			// and move it back using ListSearch
 
 			// we are searching the process sent to though 3 Lists from HP to LP
 			Process *curr = ListCurr(HPlist);
@@ -322,6 +322,7 @@ int main(int argc, char *argv[])
 					found = 1;
 				}
 				ListFirst(HPlist);
+				// and move current point back to the original place 
 				ListSearch(HPlist, comparator, curr);
 			}
 
@@ -411,9 +412,11 @@ int main(int argc, char *argv[])
 					}
 				}
 
+				// put the msg in the receiver'messages list
 				ListAdd(receiver->messages, msg);
 				running->state = 2; // Block the sender of the message
 				ListAdd(sendBlocked, running);
+				//remove it running process
 				if(running->priority == 0){
 					if (ListNext(HPlist) == NULL) {
 						ListPrev(HPlist);
