@@ -6,4 +6,4 @@ asdf: main.c list.h
 	gcc -c main.c
 
 clean:
-	rm *.o output
+	rm output
