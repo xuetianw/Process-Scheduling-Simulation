@@ -1,714 +1,452 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "list.h"
-
-struct Process;
-
-typedef struct Message {
-	struct Process* sender;
-	char message[40];
-} Message;
-
-typedef struct Process {
-	int pid;
-	int priority;
-	int state; // ready: 0, running: 1, blocked: 2
-	LIST* messages;
-} Process;
+#include "Process.h"
 
 
-typedef struct Semaphores{
-	int id;
-	int init;
-	LIST* waitlist;
-	int value;
-} Semaphore;
-
-int comparator(const void* i1, const void* i2) {
-	Process *p1 = (Process *)i1;
-	Process *p2 = (Process *)i2;
-	if (p1->pid == p2->pid) {
-		return 1;
-	}
-	else {
-		return 0;
-	}
-}
-
-int main(int argc, char *argv[])
-{
-	Semaphore semaphores[5];
-	for (int i = 0; i < 5; i++) {
-		semaphores[i].id = i;
-		semaphores[i].init = 0;
-		semaphores[i].waitlist = ListCreate();
-		semaphores[i].value = 0;
-	}
-
-	int last_pid = 0;
-	LIST *HPlist = ListCreate();
-	LIST *NPlist = ListCreate();
-	LIST *LPlist = ListCreate();
-	LIST *sendBlocked = ListCreate();
-	LIST *receiveBlocked = ListCreate();
-	int terminate = 0;
-	char input;
-	while (!terminate){
-		Process *running = ListCurr(HPlist);
-		if (running == NULL) {
-			running = ListCurr(NPlist);
-			if (running == NULL) {
-				running = ListCurr(LPlist);
-			}
-		}
+int main(int argc, char* argv[]) {
+    Semaphore semaphores[5];
+    for (int i = 0; i < 5; i++) {
+        semaphores[i].id = i;
+        semaphores[i].init = 0;
+        semaphores[i].waitlist = ListCreate();
+        semaphores[i].value = 0;
+    }
 
 
-		if (running != NULL) {
-			printf("running process number: %d\n", running->pid); 
-		}
+    /*creating priority lists*/
+    LIST* hp_list = ListCreate();
+    LIST* np_list = ListCreate();
+    LIST* lp_list = ListCreate();
 
-		scanf("%c", &input);
-		if(input == 'c'){
-			int priority;
-			printf("priority: ");
-			scanf("%d", &priority);
-			Process *p = malloc(sizeof(Process));
-			if(priority == 0 || priority == 1 || priority == 2){
-				p->pid = ++last_pid;
-				p->priority = priority;
-				p->state = 0;
-				p->messages = ListCreate();
-			}
-			if(priority == 0) {
-				ListInsert(HPlist, p);
-				if (ListNext(HPlist) == NULL) {
-					ListPrev(HPlist);
-				}
-			}
-			else if(priority == 1) {
-				ListInsert(NPlist, p);
-				if (ListNext(NPlist) == NULL) {
-					ListPrev(NPlist);
-				}
+    LIST* sendBlocked = ListCreate();
+    LIST* receiveBlocked = ListCreate();
 
-			}
-			else if(priority == 2) {
-				ListInsert(LPlist, p);
-				if (ListNext(LPlist) == NULL) {
-					ListPrev(LPlist);
-				}
-			}
-			else {
-				printf("wrong number for priority\n");
-				continue;
-			}
-			printf("created a new process %d\n", p->pid);
-		}
-		else if (input == 'f') {
-			if (running == NULL) {
-				printf("fork failed\n");
-				continue;
-			}
-			Process *p = malloc(sizeof(Process));
-			p->pid = ++last_pid;
-			p->priority = running->priority;
-			p->state = 0;
-			p->messages = ListCreate();
-			if(p->priority == 0) {
-				ListInsert(HPlist, p);
-				ListNext(HPlist);
-			}
-			else if(p->priority == 1) {
-				ListInsert(NPlist, p);
-				ListNext(NPlist);
-			}
-			else if(p->priority == 2) {
-				ListInsert(LPlist, p);
-				ListNext(LPlist);
-			}
-			printf("forked process %d to %d\n", running->pid, p->pid);
-		}
-		else if (input == 'k') {
-			int deleting_pid;
-			printf("pid: ");
-			scanf("%d", &deleting_pid);
-			Process *p = malloc(sizeof(Process));
-			p->pid = deleting_pid;
-			
-			if ((ListCurr(HPlist)) == NULL){
-				if ((ListCurr(NPlist)) == NULL){
-					if ((ListCurr(LPlist)) == NULL){
-						printf("Killed failed\n");
-					}
-				}
-			}
-			// High
-			Process *curr = ListCurr(HPlist);
-			if (curr != NULL) {
-				// if the process that user wants to kill is the one running
-				if (curr->pid == deleting_pid) {
-					if (ListNext(HPlist) == NULL) {
-						ListPrev(HPlist);
-						ListRemove(HPlist);
-						ListFirst(HPlist);
-					}
-					else {
-						ListPrev(HPlist);
-						ListRemove(HPlist);
+    int terminate = 0;
+    char input;
+    while (!terminate) {
+        Process* running = ListCurr(hp_list);
+        if (running == NULL) {
+            running = ListCurr(np_list);
+            if (running == NULL) {
+                running = ListCurr(lp_list);
+            }
+        }
 
-					}
-					printf("Killed succeeded\n");
-				}
-				// if the process that user wants to kill is not the one running
-				else {
-					// current pointer goes to the first process
-					// and ListSearch takes the current pointer to the found item
-					ListFirst(HPlist);
-					if (ListSearch(HPlist, comparator, p) != NULL) {
-						ListRemove(HPlist);
-						printf("Killed succeeded\n");
+        if (running != NULL) {
+            printf("running process number: %d\n", running->pid);
+            running->state = 2;
+        }
 
-					}
-					ListFirst(HPlist);
-				}
-				//if we cannot find the process, kill fails need to complete
-			}
+        scanf("%c", &input);
+        if (input == 'c') {
+            int priority;
+            printf("priority: ");
+            scanf("%d", &priority);
+            Process* p = malloc(sizeof(Process));
+            if (priority == 0 || priority == 1 || priority == 2) {
+                p->pid = ++last_pid;
+                p->priority = priority;
+                p->state = 0;
+                p->messages = ListCreate();
+            }
+            if (priority == 0) {
+                create(hp_list, p);
+            } else if (priority == 1) {
+                create(np_list, p);
+            } else if (priority == 2) {
+                create(lp_list, p);
+            } else {
+                printf("wrong number for priority\n");
+                continue;
+            }
+            printf("created a new process %d\n", p->pid);
+        } else if (input == 'f') {
+            if (running == NULL) {
+                printf("there is no process running fork failed\n");
+                continue;
+            }
 
-			// Norm
-			curr = ListCurr(NPlist);
-			if (curr != NULL) {
-				if (curr->pid == deleting_pid) {
-					if (ListNext(NPlist) == NULL) {
-						ListPrev(NPlist);
-						ListRemove(NPlist);
-						ListFirst(NPlist);
-					}
-					else {
-						ListPrev(NPlist);
-						ListRemove(NPlist);
-					}
-					printf("Killed succeeded\n");
-				}
-				else {
-					ListFirst(NPlist);
-					if (ListSearch(NPlist, comparator, p) != NULL) {
-						ListRemove(NPlist);
-					}
-					ListFirst(NPlist);
-				}
-			}
+            if (running->priority == 0) {
+                fork_process(hp_list, running);
+            } else if (running->priority == 1) {
+                fork_process(np_list, running);
+            } else if (running->priority == 2) {
+                fork_process(lp_list, running);
+            }
+        } else if (input == 'k') {
+            int deleting_pid;
+            printf("please enter pid that you want to delete: ");
+            scanf("%d", &deleting_pid);
 
-			// Low
-			curr = ListCurr(LPlist);
-			if (curr != NULL) {
-				if (curr->pid == deleting_pid) {
-					if (ListNext(LPlist) == NULL) {
-						ListPrev(LPlist);
-						ListRemove(LPlist);
-						ListFirst(LPlist);
-					}
-					else {
-						ListPrev(LPlist);
-						ListRemove(LPlist);
-					}
-					printf("Killed succeeded\n");
-				}
-				else {
-					ListFirst(LPlist);
-					if (ListSearch(LPlist, comparator, p) != NULL) {
-						ListRemove(LPlist);
-						printf("Killed succeeded\n");
-					}
-					ListFirst(LPlist);
-				}
-			}
-		}
+            if (ListCurr(hp_list) == NULL && ListCurr(np_list) == NULL && ListCurr(lp_list) == NULL) {
+                printf("Killed failed\n");
+            }
+            // High
+            Process* curr = ListCurr(hp_list);
+            if (curr != NULL) {
+                // if the process that user wants to kill is the one running
+                if (curr->pid == deleting_pid) {
+                    exit_process(hp_list);
+                    printf("Killed succeeded\n");
+                    continue;
+                } else if (kill_process(hp_list, deleting_pid, curr)) {
+                    continue;
+                }
+            }
 
-		else if (input == 'e'){
-			if(running == NULL){
-				printf("nothing is running at the moment\n");
-			}
-			else{
-				if(running->priority == 0){
-					if (ListNext(HPlist) == NULL) {
-						ListPrev(HPlist);
-						ListRemove(HPlist);
-						ListFirst(HPlist);
-					}
-					else {
-						ListPrev(HPlist);
-						ListRemove(HPlist);
-					}
-				}
-				else if(running->priority == 1){					
-					if (ListNext(NPlist) == NULL) {
-						ListPrev(NPlist);
-						ListRemove(NPlist);
-						ListFirst(NPlist);
-					}
-					else {
-						ListPrev(NPlist);
-						ListRemove(NPlist);
-					}
-				}
+            curr = ListCurr(np_list);
+            if (curr != NULL) {
+                if (curr->pid == deleting_pid) {
+                    exit_process(np_list);
+                    printf("Killed succeeded\n");
+                    continue;
+                } else if (kill_process(np_list, deleting_pid, curr)) {
+                    continue;
+                }
+            }
 
-				else{
-					if (ListNext(LPlist) == NULL) {
-						ListPrev(LPlist);
-						ListRemove(LPlist);
-						ListFirst(LPlist);
-					}
-					else {
-						ListPrev(LPlist);
-						ListRemove(LPlist);
-					}
-				}
-			}
-		}
+            curr = ListCurr(lp_list);
+            if (curr != NULL) {
+                if (curr->pid == deleting_pid) {
+                    exit_process(lp_list);
+                    printf("Killed succeeded\n");
+                    continue;
+                }else if (kill_process(lp_list, deleting_pid, curr)) {
+                    continue;
+                }
+            }
+            printf("Killed failed\n");
 
-		else if (input == 'q'){
-			if(running == NULL){
-				printf("nothing is running at the moment\n");
-			}
-			else{
-				if(ListCurr(HPlist) != NULL){
-					if (ListNext(HPlist) == NULL) {
-						ListFirst(HPlist);
-					}
-				}
-				else if(ListCurr(NPlist) != NULL){					
-					if (ListNext(NPlist) == NULL) {
-						ListFirst(NPlist);
-					}
-				}
-				else{
-					if (ListNext(LPlist) == NULL) {
-						ListFirst(LPlist);
-					}
-				}
-			}
-		}
+        } else if (input == 'e') {
+            if (running == NULL) {
+                printf("nothing is running at the moment\n");
+            } else {
+                if (running->priority == 0) {
+                    exit_process(hp_list);
+                } else if (running->priority == 1) {
+                    exit_process(np_list);
+                } else {
+                    exit_process(lp_list);
+                }
+            }
+        } else if (input == 'q') {
+            if (running == NULL) {
+                printf("nothing is running at the moment\n");
+            } else {
+                running->state = 0;
+                if (running->priority == 0) {
+                    quantum(hp_list);
+                } else if (running->priority == 1) {
+                    quantum(np_list);
+                } else {
+                    if (ListNext(lp_list) == NULL) {
+                        ListFirst(lp_list);
+                    }
+                }
+            }
+        } else if (input == 's') {
+            if (running == NULL) {
+                printf("nothing is running at the moment\n");
+                continue;
+            }
 
-		else if (input == 's'){
-			if (running == NULL) {
-				printf("nothing is running at the moment\n");
-				continue;
-			}
+            int send_to_pid;
+            printf("type target pid: ");
+            scanf("%d", &send_to_pid);
 
-			int send_to_pid;
-			printf("target pid: ");
-			scanf("%d", &send_to_pid);
+            printf("type message you want to send: ");
+            char message[40];
+            scanf("%s", message);
+            printf("your message%s\n", message);
+            Process* send_to_process = malloc(sizeof(Process));
+            send_to_process->pid = send_to_pid;
+            Process* receiver_process;
 
-			printf("message: ");
-			char message[40];
-			scanf("%s", message);
-			printf("%s\n",message);
-			Process *send_to_process = malloc(sizeof(Process));
-			send_to_process->pid = send_to_pid;
-			Process *receiver;
+            int found = 0; //finding revceiver from the 3 lists
 
-			int found = 0; //finding revceiver from the 3 lists
+            // return the current pointer int a temp lovation curr so that
+            // we could find the original current pointer location
 
-			// return the current pointer int a temp lovation curr so that
-			// we could find the original current pointer location
+            // we are searching the process sent to though 3 Lists from HP to LP
+            Process* curr = ListCurr(hp_list);
+            if (curr != NULL) {
+                ListFirst(hp_list);
+                receiver_process = ListSearch(hp_list, comparator, send_to_process);
+                if (receiver_process != NULL) {
+                    found = 1;
+                }
+                ListFirst(hp_list);
+                ListSearch(hp_list, comparator, curr);// and move current point back to the original place
+            }
 
-			// we are searching the process sent to though 3 Lists from HP to LP
-			Process *curr = ListCurr(HPlist);
-			if (curr != NULL) {
-				ListFirst(HPlist);
-				if ((receiver = ListSearch(HPlist, comparator, send_to_process)) != NULL) {
-					found = 1;
-				}
-				ListFirst(HPlist);
-				// and move current point back to the original place 
-				ListSearch(HPlist, comparator, curr);
-			}
+            // if process sent to does not exist in the HP List, then we go to the np_list
+            if (found == 0) {
+                curr = ListCurr(np_list);
+                if (curr != NULL) {
+                    ListFirst(np_list);
+                    receiver_process = ListSearch(np_list, comparator, send_to_process);
+                    if (receiver_process != NULL) {
+                        found = 1;
+                    }
+                    ListFirst(np_list);
+                    ListSearch(np_list, comparator, curr);
+                }
+            }
 
-			// if process sent to does not exist in the HP List, then we go to the NPlist
-			if (found == 0) {
-				curr = ListCurr(NPlist);
-				if (curr != NULL) {
-					ListFirst(NPlist);
-					if ((receiver = ListSearch(NPlist, comparator, send_to_process)) != NULL) {
-						found = 1;
-					}
-					ListFirst(NPlist);
-					ListSearch(NPlist, comparator, curr);
-				}
-			}
+            // if the process sent to does not exist in the np_list, then we go to the lp_list
+            if (found == 0) {
+                curr = ListCurr(lp_list);
+                if (curr != NULL) {
+                    ListFirst(lp_list);
+                    receiver_process = ListSearch(lp_list, comparator, send_to_process);
+                    if (receiver_process != NULL) {
+                        found = 1;
+                    }
+                    ListFirst(lp_list);
+                    ListSearch(lp_list, comparator, curr);
+                }
+            }
 
-			// if the process sent to does not exist in the NPlist, then we go to the LPlist 
-			if (found == 0) {
-				curr = ListCurr(LPlist);
-				if (curr != NULL) {
-					ListFirst(LPlist);
-					if ((receiver = ListSearch(LPlist, comparator, send_to_process)) != NULL) {
-						found = 1;
-					}
-					ListFirst(LPlist);
-					ListSearch(LPlist, comparator, curr);
-				}
-			}
+            // if the process sent to is in none of the list, we try finding it in the sendBlock List
+            if (found == 0) {
+                curr = ListCurr(sendBlocked);
+                if (curr != NULL) {
+                    ListFirst(sendBlocked);
+                    receiver_process = ListSearch(sendBlocked, comparator, send_to_process);
+                    if (receiver_process != NULL) {
+                        found = 2;
+                    }
+                    ListFirst(sendBlocked);
+                    ListSearch(sendBlocked, comparator, curr);
+                }
+            }
 
-			// if the process sent to is in none of the list, we try finding it in the sendBlock List
-			if (found == 0) {
-				curr = ListCurr(sendBlocked);
-				if (curr != NULL) {
-					ListFirst(sendBlocked);
-					if ((receiver = ListSearch(sendBlocked, comparator, send_to_process)) != NULL) {
-						found = 2; // if receiver is blocked due to the send command, do not unblock it.
-					}
-					ListFirst(sendBlocked);
-					ListSearch(sendBlocked, comparator, curr);
-				}
-			}
+            if (found == 0) {
+                curr = ListCurr(receiveBlocked);
+                if (curr != NULL) {
+                    ListFirst(receiveBlocked);
+                    receiver_process = ListSearch(receiveBlocked, comparator, send_to_process);
+                    if (receiver_process != NULL) {
+                        found = 3;
+                    }
+                    ListFirst(receiveBlocked);
+                    ListSearch(receiveBlocked, comparator, curr);
+                }
+            }
 
-			if (found == 0) {
-				curr = ListCurr(receiveBlocked);
-				if (curr != NULL) {
-					ListFirst(receiveBlocked);
-					if ((receiver = ListSearch(receiveBlocked, comparator, send_to_process)) != NULL) {
-						found = 3; // if receiver is already blocked due to the receiver command, unblock it while sending your message.
-					}
-					ListFirst(receiveBlocked);
-					ListSearch(receiveBlocked, comparator, curr);
-				}
-			}
+            if (found == 0) {
+                printf("pid does not exist in the 3 Priority lists\n");
+            } else { // found the revceiver
+                Message* msg = malloc(sizeof(Message));
+                msg->sender = (Process*) running;
+                strcpy(msg->message, message);
+                // if receiver_process is blocked and is on the blocked list, we put it in the ready
+                if (found == 3) {
+                    // change the state of receiver_process to ready
+                    receiver_process->state = 0; // Ready
+                    ListFirst(receiveBlocked);
+                    if (ListSearch(receiveBlocked, comparator, receiver_process) != NULL) {
+                        ListRemove(receiveBlocked); // remove receiver_process from receiveBlocked list
+                        // put the msg in the receiver_process'messages list
+                        ListAdd(receiver_process->messages, msg);
+                        if (receiver_process->priority == 0) {
+                            create(hp_list, receiver_process); //put it at the back of the queue
+                        } else if (receiver_process->priority == 1) {
+                            create(np_list, receiver_process); //put it at the back of the queue
+                        } else {
+                            create(lp_list, receiver_process); //put it at the back of the queue
+                        }
+                    }
+                }
 
-			if (found == 0) {
-					printf("pid does not exist in the 3 Prioritylists\n");
-			}
-			// found the revceiver
-			else {
-				Message *msg = malloc(sizeof(Message));
-				msg->sender = running;
-				strcpy(msg->message, message);
-				// if receiver is blocked and is on the blocked list, we put it in the ready
-				if (receiver->state == 2 && found == 3) {
-				// change the state of receiver to ready 
-					receiver->state = 0; // Ready
-					if (ListSearch(receiveBlocked, comparator, receiver) != NULL) {
-						ListRemove(receiveBlocked); // remove receiver from receiveBlocked list
-						if(receiver->priority == 0) {
-							//put it at the back of the queue
-							ListInsert(HPlist, receiver);
-							if (ListNext(HPlist) == NULL) {
-								ListPrev(HPlist);
-							}
-						}
-						else if(receiver->priority == 1) {
-							//put it at the back of the queue
-							ListInsert(NPlist, receiver);
-							if (ListNext(NPlist) == NULL) {
-								ListPrev(NPlist);
-							}
-						}
-						else {
-							//put it at the back of the queue
-							ListInsert(LPlist, receiver);
-							if (ListNext(LPlist) == NULL) {
-								ListPrev(LPlist);
-							}
-						}
-					}
-				}
+                running->state = 3; // Block the sender
+                ListAdd(sendBlocked, running);
+                //remove it running process
+                if (running->priority == 0) {
+                    exit_process(hp_list);
+                } else if (running->priority == 1) {
+                    exit_process(np_list);
+                } else {
+                    exit_process(lp_list);
+                }
+            }
+        } else if (input == 'r') {
+            if (running == NULL) {
+                printf("nothing is running at the moment\n");
+                continue;
+            }
+            Message* msg;
+            if ((msg = ListRemove(running->messages)) != NULL) {
+                printf("Process %d: %s\n", msg->sender->pid, msg->message);
+            } else {
+                running->state = 3; // No message to receive, block the receiver
+                ListAdd(receiveBlocked, running);
+                if (running->priority == 0) {
+                    exit_process(hp_list);
+                } else if (running->priority == 1) {
+                    exit_process(np_list);
+                } else {
+                    exit_process(lp_list);
+                }
+            }
+        } else if (input == 'Y') {
+            if (running == NULL) {
+                printf("nothing is running at the moment\n");
+                continue;
+            }
 
-				// put the msg in the receiver'messages list
-				ListAdd(receiver->messages, msg);
-				running->state = 2; // Block the sender of the message
-				ListAdd(sendBlocked, running);
-				//remove it running process
-				if(running->priority == 0){
-					if (ListNext(HPlist) == NULL) {
-						ListPrev(HPlist);
-						ListRemove(HPlist);
-						// go to the next process which is at the first of the queue
-						ListFirst(HPlist);
-					}
-					else {
-						ListPrev(HPlist);
-						ListRemove(HPlist);
-					}
-				}
-				else if(running->priority == 1){					
-					if (ListNext(NPlist) == NULL) {
-						ListPrev(NPlist);
-						ListRemove(NPlist);
-						// go to the next process which is at the first of the queue
-						ListFirst(NPlist);
-					}
-					else {
-						ListPrev(NPlist);
-						ListRemove(NPlist);
-					}
-				}
-				else{
-					if (ListNext(LPlist) == NULL) {
-						ListPrev(LPlist);
-						ListRemove(LPlist);
-						// go to the next process which is at the first of the queue
-						ListFirst(LPlist);
-					}
-					else {
-						ListPrev(LPlist);
-						ListRemove(LPlist);
-					}
-				}
-			}
+            int temp_pid;
+            printf("please enter sender_process pid: ");
+            scanf("%d", &temp_pid);
+            printf("message: ");
+            char message[40];
+            scanf("%s", message);
+            Process* temp_process = malloc(sizeof(Process));
+            temp_process->pid = temp_pid;
+            Process* sender_process;
 
-		}
-		else if (input == 'r'){
-			if (running == NULL) {
-				printf("nothing is running at the moment\n");
-				continue;
-			}
+            ListFirst(sendBlocked);
+            sender_process = ListSearch(sendBlocked, comparator, temp_process);
+            if (sender_process == NULL) {
+                printf("sender_process process does not exist\n");
+            } else {
+                // TODO: send the reply message to sender_process, and sender_process should print this message at its turn
+                // Message *msg = malloc(sizeof(Message));
+                // msg.sender_process = running;
+                // strcpy(message, msg.message, 40);
 
-			Message* msg;
-			if ((msg = ListRemove(running->messages)) != NULL) {
-				printf("Process %d: %s\n", msg->sender->pid, msg->message);
-			}
-			else {
-				running->state = 2; // No message to receive, block the receiver
-				ListAdd(receiveBlocked, running);
-				if(running->priority == 0){
-					if (ListNext(HPlist) == NULL) {
-						ListPrev(HPlist);
-						ListRemove(HPlist);
-						ListFirst(HPlist);
-					}
-					else {
-						ListPrev(HPlist);
-						ListRemove(HPlist);
-					}
-				}
-				else if(running->priority == 1){					
-					if (ListNext(NPlist) == NULL) {
-						ListPrev(NPlist);
-						ListRemove(NPlist);
-						ListFirst(NPlist);
-					}
-					else {
-						ListPrev(NPlist);
-						ListRemove(NPlist);
-					}
-				}
-				else{
-					if (ListNext(LPlist) == NULL) {
-						ListPrev(LPlist);
-						ListRemove(LPlist);
-						ListFirst(LPlist);
-					}
-					else {
-						ListPrev(LPlist);
-						ListRemove(LPlist);
-					}
-				}				
-			}
-		}
+                sender_process->state = 0; // Unblock the sender_process
+                if (ListSearch(sendBlocked, comparator, sender_process) != NULL) {
+                    ListRemove(sendBlocked); // remove receiver from receiveBlocked list
+                    if (sender_process->priority == 0) {
+                        create(hp_list, sender_process);
+                    } else if (sender_process->priority == 1) {
+                        create(np_list, sender_process);
+                    } else {
+                        create(lp_list, sender_process);
+                    }
+                }
 
-		else if (input == 'Y'){
-			if (running == NULL) {
-				printf("nothing is running at the moment\n");
-				continue;
-			}
+                Message* msg = malloc(sizeof(Message));
+                msg->sender = running;
+                strcpy(msg->message, message);
+                ListAdd(sender_process->messages, msg);
+            }
+        } else if (input == 'n') {
+            int sem_id;
+            printf("please enter semphore ID that you want to initialize: ");
+            scanf("%d", &sem_id);
+            if (semaphores[sem_id].init == 1) {
+                printf("semaphore #%d has been initialized before!\n", sem_id);
+                continue;
+            }
 
-			int temp_pid;
-			printf("sender pid: ");
-			scanf("%d", &temp_pid);
-			printf("message: ");
-			char message[40];
-			scanf("%s", message);
-			Process *temp = malloc(sizeof(Process));
-			temp->pid = temp_pid;
-			Process *sender;
+            int sem_value;
+            printf("please semphore value: ");
+            scanf("%d", &sem_value);
+            if (sem_value < 0) {
+                printf("wrong semaphore value\n");
+                continue;
+            }
 
-			ListFirst(sendBlocked);
-			if ((sender = ListSearch(sendBlocked, comparator, temp)) == NULL) {
-				printf("sender process does not exist\n");
-			}
-			else {
-				// TODO: send the reply message to sender, and sender should print this message at its turn
-				// Message *msg = malloc(sizeof(Message));
-				// msg.sender = running;
-				// strcpy(message, msg.message, 40);
+            semaphores[sem_id].value = sem_value;
+            printf("semaphore #%d has been initialized !\n", sem_id);
+        } else if (input == 'p') {
+            int semphoreid;
+            printf("semphore ID: ");
+            scanf("%d", &semphoreid);
+            if (semaphores[semphoreid].value < 0) {
+                ListAdd(semaphores[semphoreid].waitlist, running);
+                running->state = 2;
+                if (running->priority == 0) {
+                    exit_process(hp_list);
+                } else if (running->priority == 1) {
+                    exit_process(np_list);
+                } else {
+                    exit_process(lp_list);
+                }
+            } else {
+                semaphores[semphoreid].value--;
+            }
+        } else if (input == 'v') {
+            int sem_id;
+            printf("semphore ID: ");
+            scanf("%d", &sem_id);
+            if (ListCount(semaphores[sem_id].waitlist) > 0) {
+                Process* blockedP = ListRemove(semaphores[sem_id].waitlist);
+                if (blockedP->priority == 0) {
+                    ListInsert(hp_list, blockedP);
+                    if (ListNext(hp_list) == NULL) {
+                        ListPrev(hp_list);
+                    }
+                } else if (blockedP->priority == 1) {
+                    ListInsert(np_list, blockedP);
+                    if (ListNext(np_list) == NULL) {
+                        ListPrev(np_list);
+                    }
 
-				sender->state = 0; // Unblock the sender
-				if (ListSearch(sendBlocked, comparator, sender) != NULL) {
-					ListRemove(sendBlocked); // remove receiver from receiveBlocked list
-					if(sender->priority == 0) {
-						ListInsert(HPlist, sender);
-						if (ListNext(HPlist) == NULL) {
-							ListPrev(HPlist);
-						}
-					}
-					else if(sender->priority == 1) {
-						ListInsert(NPlist, sender);
-						if (ListNext(NPlist) == NULL) {
-							ListPrev(NPlist);
-						}
+                } else {
+                    ListInsert(lp_list, blockedP);
+                    if (ListNext(lp_list) == NULL) {
+                        ListPrev(lp_list);
+                    }
+                }
+            } else {
+                semaphores[sem_id].value++;
+            }
+        } else if (input == 'i') {
+            printf("complete information about the current running process pid: %d priority: %d state: %d \n",
+                   ((Process*) ListCurr(hp_list))->pid, ((Process*) ListCurr(hp_list))->priority,
+                   ((Process*) ListCurr(hp_list))->state);
+        } else if (input == 't') {
+            Process* temp = ListCurr(hp_list);
+            while (ListCurr(hp_list) != NULL) {
+                printf("pid: %d priority: %d state: %d \n",
+                       ((Process*) ListCurr(hp_list))->pid, ((Process*) ListCurr(hp_list))->priority,
+                       ((Process*) ListCurr(hp_list))->state);
+                ListNext(hp_list);
+            }
+            ListFirst(hp_list);
+            while (ListCurr(hp_list) != temp) {
+                printf("pid: %d priority: %d state: %d \n",
+                       ((Process*) ListCurr(hp_list))->pid, ((Process*) ListCurr(hp_list))->priority,
+                       ((Process*) ListCurr(hp_list))->state);
+                ListNext(hp_list);
+            }
 
-					}
-					else {
-						ListInsert(LPlist, sender);
-						if (ListNext(LPlist) == NULL) {
-							ListPrev(LPlist);
-						}
-					}
-				}
+            temp = ListCurr(np_list);
+            while (ListCurr(np_list) != NULL) {
+                printf("pid: %d priority: %d state: %d \n",
+                       ((Process*) ListCurr(np_list))->pid, ((Process*) ListCurr(np_list))->priority,
+                       ((Process*) ListCurr(np_list))->state);
+                ListNext(np_list);
+            }
+            ListFirst(np_list);
+            while (ListCurr(np_list) != temp) {
+                printf("pid: %d priority: %d state: %d \n",
+                       ((Process*) ListCurr(np_list))->pid, ((Process*) ListCurr(np_list))->priority,
+                       ((Process*) ListCurr(np_list))->state);
+                ListNext(np_list);
+            }
 
-				Message *msg = malloc(sizeof(Message));
-				msg->sender = running;
-				strcpy(msg->message, message);
-				ListAdd(sender->messages, msg);
-			}
-		}
+            temp = ListCurr(lp_list);
+            while (ListCurr(lp_list) != NULL) {
+                printf("pid: %d priority: %d state: %d \n",
+                       ((Process*) ListCurr(lp_list))->pid, ((Process*) ListCurr(lp_list))->priority,
+                       ((Process*) ListCurr(lp_list))->state);
+                ListNext(lp_list);
+            }
+            ListFirst(lp_list);
+            while (ListCurr(lp_list) != temp) {
+                printf("pid: %d priority: %d state: %d \n",
+                       ((Process*) ListCurr(lp_list))->pid, ((Process*) ListCurr(lp_list))->priority,
+                       ((Process*) ListCurr(lp_list))->state);
+                ListNext(lp_list);
+            }
+        }
 
-		else if (input == 'n'){
-			int sem_id;
-			printf("semphore ID: ");
-			scanf("%d", &sem_id);
-			if (semaphores[sem_id].init == 1) {
-				printf("semaphore #%d has been initialized before!\n", sem_id);
-				continue;
-			}
-
-			int sem_value;
-			printf("semphore value: ");
-			scanf("%d", &sem_value);
-			if (sem_value < 0) {
-				printf("wrong semaphore value\n");
-				continue;
-			}
-
-			semaphores[sem_id].value = sem_value;
-			printf("semaphore #%d has been initialized !\n", sem_id);
-		}
-		else if (input == 'p'){
-			int semphoreid;
-			printf("semphore ID: ");
-			scanf("%d", &temp_pid);
-			if(semaphores[semphoreid].value < 0){
-				ListAdd(semaphores[semphoreid].waitlist, running);
-				running.state = 2;
-				if(running->priority == 0){
-					if (ListNext(HPlist) == NULL) {
-						ListPrev(HPlist);
-						ListRemove(HPlist);
-						ListFirst(HPlist);
-					}
-					else {
-						ListPrev(HPlist);
-						ListRemove(HPlist);
-					}
-				}
-				else if(running->priority == 1){					
-					if (ListNext(NPlist) == NULL) {
-						ListPrev(NPlist);
-						ListRemove(NPlist);
-						ListFirst(NPlist);
-					}
-					else {
-						ListPrev(NPlist);
-						ListRemove(NPlist);
-					}
-				}
-
-				else{
-					if (ListNext(LPlist) == NULL) {
-						ListPrev(LPlist);
-						ListRemove(LPlist);
-						ListFirst(LPlist);
-					}
-					else {
-						ListPrev(LPlist);
-						ListRemove(LPlist);
-					}
-				}
-			} else {
-				semaphores[semphoreid].value --;
-			}
-		}
-
-		else if (input == 'v'){
-			int temp_pid;
-			printf("semphore ID: ");
-			scanf("%d", &temp_pid);
-			if(ListCount(semaphores[semphoreid].waitlist) > 0) {
-				Process* blockedP = ListRemove(semaphores[semphoreid].waitlist);
-				if(blockedP->priority == 0) {
-					ListInsert(HPlist, blockedP);
-					if (ListNext(HPlist) == NULL) {
-						ListPrev(HPlist);
-					}
-				}
-				else if(blockedP->priority == 1) {
-					ListInsert(NPlist, blockedP);
-					if (ListNext(NPlist) == NULL) {
-						ListPrev(NPlist);
-					}
-
-				}
-				else {
-					ListInsert(LPlist, blockedP);
-					if (ListNext(LPlist) == NULL) {
-						ListPrev(LPlist);
-					}
-				}
-			}
-			else {
-				semaphores[semphoreid].value ++;
-			}
-		}
-
-		else if (input == 'i'){
-			printf("complete information about the current running process pid: %d priority: %d state: %d \n", 
-					((Process *)ListCurr(HPlist))->pid, ((Process *)ListCurr(HPlist))-> priority, ((Process *)ListCurr(HPlist))->state );
-		}
-		else if (input == 't'){
-			Process * temp = ListCurr(HPlist);
-			while(ListCurr(HPlist) != NULL){
-				printf("pid: %d priority: %d state: %d \n", 
-					((Process *)ListCurr(HPlist))->pid, ((Process *)ListCurr(HPlist))-> priority, ((Process *)ListCurr(HPlist))->state );
-				ListNext(HPlist);
-			}
-			ListFirst(HPlist);
-			while(ListCurr(HPlist) != temp){
-				printf("pid: %d priority: %d state: %d \n", 
-					((Process *)ListCurr(HPlist))->pid, ((Process *)ListCurr(HPlist))-> priority, ((Process *)ListCurr(HPlist))->state );
-				ListNext(HPlist);
-			}
-
-			temp = ListCurr(NPlist);
-			while(ListCurr(NPlist) != NULL){
-				printf("pid: %d priority: %d state: %d \n", 
-					((Process *)ListCurr(NPlist))->pid, ((Process *)ListCurr(NPlist))-> priority, ((Process *)ListCurr(NPlist))->state );
-				ListNext(NPlist);
-			}
-			ListFirst(NPlist);
-			while(ListCurr(NPlist) != temp){
-				printf("pid: %d priority: %d state: %d \n", 
-					((Process *)ListCurr(NPlist))->pid, ((Process *)ListCurr(NPlist))-> priority, ((Process *)ListCurr(NPlist))->state );
-				ListNext(NPlist);
-			}
-
-			temp = ListCurr(LPlist);
-			while(ListCurr(LPlist) != NULL){
-				printf("pid: %d priority: %d state: %d \n", 
-					((Process *)ListCurr(LPlist))->pid, ((Process *)ListCurr(LPlist))-> priority, ((Process *)ListCurr(LPlist))->state );
-				ListNext(LPlist);
-			}
-			ListFirst(LPlist);
-			while(ListCurr(LPlist) != temp){
-				printf("pid: %d priority: %d state: %d \n", 
-					((Process *)ListCurr(LPlist))->pid, ((Process *)ListCurr(LPlist))-> priority, ((Process *)ListCurr(LPlist))->state );
-				ListNext(LPlist);
-			}
-		}
-
-
-
-	}
+    }
 
     return 0;
 }

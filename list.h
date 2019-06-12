@@ -99,6 +99,6 @@ void *ListTrim(LIST* somelist);
 /*PRE: somelist is a valid list type structure
   POST: Return last item and take it out of list. Make the new last item the current one. */
 
-void *ListSearch(LIST* somelist, int (*comparator)() , void* comparisonArg);
+void *ListSearch(LIST* somelist, int (*comparator)() , const void* comparisonArg);
 /*PRE: somelist is a valid list type structure and also the comparator and comparisonArg are valid types.
   POST: searches list starting at the current item until the end is reached or a match is found. */
