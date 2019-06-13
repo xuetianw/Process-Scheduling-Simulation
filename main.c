@@ -311,11 +311,6 @@ int main(int argc, char* argv[]) {
             if (sender_process == NULL) {
                 printf("sender_process process does not exist\n");
             } else {
-                // TODO: send the reply message to sender_process, and sender_process should print this message at its turn
-                // Message *msg = malloc(sizeof(Message));
-                // msg.sender_process = running;
-                // strcpy(message, msg.message, 40);
-
                 sender_process->state = 0; // Unblock the sender_process
                 if (ListSearch(sendBlocked, comparator, sender_process) != NULL) {
                     ListRemove(sendBlocked); // remove receiver from receiveBlocked list

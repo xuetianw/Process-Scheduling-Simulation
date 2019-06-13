@@ -111,17 +111,17 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named Assignment2
+# Target rules for targets named Assignment3
 
 # Build rule for target.
-Assignment2: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 Assignment2
-.PHONY : Assignment2
+Assignment3: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 Assignment3
+.PHONY : Assignment3
 
 # fast build rule for target.
-Assignment2/fast:
-	$(MAKE) -f CMakeFiles/Assignment2.dir/build.make CMakeFiles/Assignment2.dir/build
-.PHONY : Assignment2/fast
+Assignment3/fast:
+	$(MAKE) -f CMakeFiles/Assignment3.dir/build.make CMakeFiles/Assignment3.dir/build
+.PHONY : Assignment3/fast
 
 Process.o: Process.c.o
 
@@ -129,7 +129,7 @@ Process.o: Process.c.o
 
 # target to build an object file
 Process.c.o:
-	$(MAKE) -f CMakeFiles/Assignment2.dir/build.make CMakeFiles/Assignment2.dir/Process.c.o
+	$(MAKE) -f CMakeFiles/Assignment3.dir/build.make CMakeFiles/Assignment3.dir/Process.c.o
 .PHONY : Process.c.o
 
 Process.i: Process.c.i
@@ -138,7 +138,7 @@ Process.i: Process.c.i
 
 # target to preprocess a source file
 Process.c.i:
-	$(MAKE) -f CMakeFiles/Assignment2.dir/build.make CMakeFiles/Assignment2.dir/Process.c.i
+	$(MAKE) -f CMakeFiles/Assignment3.dir/build.make CMakeFiles/Assignment3.dir/Process.c.i
 .PHONY : Process.c.i
 
 Process.s: Process.c.s
@@ -147,7 +147,7 @@ Process.s: Process.c.s
 
 # target to generate assembly for a file
 Process.c.s:
-	$(MAKE) -f CMakeFiles/Assignment2.dir/build.make CMakeFiles/Assignment2.dir/Process.c.s
+	$(MAKE) -f CMakeFiles/Assignment3.dir/build.make CMakeFiles/Assignment3.dir/Process.c.s
 .PHONY : Process.c.s
 
 main.o: main.c.o
@@ -156,7 +156,7 @@ main.o: main.c.o
 
 # target to build an object file
 main.c.o:
-	$(MAKE) -f CMakeFiles/Assignment2.dir/build.make CMakeFiles/Assignment2.dir/main.c.o
+	$(MAKE) -f CMakeFiles/Assignment3.dir/build.make CMakeFiles/Assignment3.dir/main.c.o
 .PHONY : main.c.o
 
 main.i: main.c.i
@@ -165,7 +165,7 @@ main.i: main.c.i
 
 # target to preprocess a source file
 main.c.i:
-	$(MAKE) -f CMakeFiles/Assignment2.dir/build.make CMakeFiles/Assignment2.dir/main.c.i
+	$(MAKE) -f CMakeFiles/Assignment3.dir/build.make CMakeFiles/Assignment3.dir/main.c.i
 .PHONY : main.c.i
 
 main.s: main.c.s
@@ -174,7 +174,7 @@ main.s: main.c.s
 
 # target to generate assembly for a file
 main.c.s:
-	$(MAKE) -f CMakeFiles/Assignment2.dir/build.make CMakeFiles/Assignment2.dir/main.c.s
+	$(MAKE) -f CMakeFiles/Assignment3.dir/build.make CMakeFiles/Assignment3.dir/main.c.s
 .PHONY : main.c.s
 
 # Help Target
@@ -184,7 +184,7 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... rebuild_cache"
-	@echo "... Assignment2"
+	@echo "... Assignment3"
 	@echo "... edit_cache"
 	@echo "... Process.o"
 	@echo "... Process.i"
